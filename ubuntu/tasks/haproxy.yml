@@ -1,0 +1,25 @@
+---
+- name: install haproxy
+  apt: 
+    pkg: haproxy 
+
+- name: stop haproxy
+  service:
+    name:    haproxy
+    enabled: no
+    state:   stopped
+
+- name: mv default
+  shell: mv /etc/haproxy/haproxy.cfg /etc/haproxy/haproxy.cfg.orig
+  ignore_errors: yes
+
+- name: copy haproxy
+  template:
+    src: haproxy.cfg
+    dest: /etc/haproxy/haproxy.cfg
+
+- name: start haproxy
+  service:
+    name:    haproxy
+    enabled: yes
+    state:   started

@@ -1,0 +1,76 @@
+
+---
+# tasks file for patroni
+
+- name: Update all packages
+  become: true
+  yum:
+    name: '*'
+    state: latest
+    update_cache: yes
+
+- name: Install wget ca and nano
+  yum:
+    name:
+    - wget 
+    - ca-certificates
+    - nano
+    state: present
+
+
+- name: add Postgres repo
+  become: true
+  shell: yum install https://download.postgresql.org/pub/repos/yum/reporpms/EL-7-x86_64/pgdg-redhat-repo-latest.noarch.rpm
+  register: result
+  failed_when: "'Error: Nothing to do' not in  result.sdterr"
+  ignore_errors: yes
+
+- name: Debug the output
+  debug:
+    var: result.stderr
+  failed_when: "'Nothing' not in result.stderr"
+
+
+- name: install postgres-13
+  ansible.builtin.yum:
+    name: postgresql13-server
+    state: present
+
+- name:
+  become: true
+  shell: /usr/pgsql-13/bin/postgresql-13-setup initdb
+
+- name: Stop and disable postgresql service
+  become: true
+  shell: systemctl stop postgresql-13.service
+  register: postgresql_msg
+  failed_when: "'Failed to stop' in postgresql_msg.msg"
+
+- name: ln -s
+  shell: ln -s /usr/pgsql-13/bin/* /usr/sbin/
+  ignore_errors: yes
+
+- name: install etcd
+  yum:
+    name: etcd
+    state: present
+
+- name: copy etcd config
+  template:
+    src: etcd.conf
+    dest: /etc/etcd/etcd.conf
+
+- name: copy profile
+  template:
+    src: profile.yml
+    dest: "/home/{{ ansible_user }}/.profile"
+
+- name: start etcd
+  systemd:
+    name: etcd
+    state: started
+
+- name: Make sure a service etcd
+  systemd:
+    state: started
+    name: etcd

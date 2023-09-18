@@ -1,0 +1,39 @@
+---
+- name: echo
+  shell: "echo 1"
+
+- name: install python
+  yum:
+    name: 
+      - python3 
+      - python3-pip 
+    state: present 
+
+- name: install by pip3
+  become: true
+  shell:   pip3 install launchpadlib; pip3 install --upgrade setuptools; pip3 install psycopg2; pip3 install python-etcd;
+
+- name: install patroni
+  yum: 
+    name: patroni
+    state: present
+  
+- name: stop patroni
+  systemd:
+    name: patroni
+    state: stopped
+
+- name: copy etcd config
+  template:
+    src: patroni.yml
+    dest: /etc/patroni/config.yml
+
+- name: start patroni
+  systemd:
+    name: patroni
+    state: started
+
+- name: Make sure a service patroni
+  systemd:
+    state: started
+    name: patroni

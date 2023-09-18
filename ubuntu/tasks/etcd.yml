@@ -1,0 +1,87 @@
+---
+
+- name: apt update
+  ansible.builtin.apt:
+    update_cache: yes
+      # cache_valid_time: 3600
+
+- name: Install wget ca and nano
+  ansible.builtin.apt:
+    pkg:
+    - wget 
+    - ca-certificates
+    - nano
+    - gnupg
+
+- name: add Postgres APT repo
+  become: true
+  shell: apt-get update && apt-get install -y lsb-release && apt-get clean all
+
+- name: add Postgres APT repo
+  become: true
+  shell: wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
+
+- name: add Postgres APT repo
+  become: true
+  shell: sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt/ $(lsb_release -cs)-pgdg main" >> /etc/apt/sources.list.d/pgdg.list' && apt update
+
+
+- name: install postgres-13
+  ansible.builtin.apt:
+    pkg: postgresql-13
+
+- name: Stop and disable postgresql service
+  service:
+    name:    postgresql
+    enabled: no
+    state:   stopped
+  # register: postgresql_msg
+# failed_when: "postgresql_service_result is failed and 'Could not find the requested service' in postgresql_msg.msg"
+
+- name: ln -s
+  shell: ln -s /usr/lib/postgresql/13/bin/* /usr/sbin/
+  ignore_errors: yes
+
+- name: remove main dir
+  # become_user: postgres
+  shell: rm -rf /var/lib/postgresql/13/main/*
+
+- name: install etcd
+  ansible.builtin.apt:
+    pkg: etcd
+
+- name: Stop and disable etcd service
+  service:
+    name:    etcd
+    enabled: no
+    state:   stopped
+  register: etcd_msg
+
+
+- name: remove /var/lib/etcd/default
+  shell: rm -rf /var/lib/etcd/default
+
+- name: move dir
+  shell: mv /etc/default/etcd /etc/default/etcd-orig
+  ignore_errors: yes
+
+- name: copy etcd config
+  template:
+    src: etcd.conf
+    dest: /etc/default/etcd
+
+- name: copy profile config
+  template:
+    src: profile.yml
+    dest: "/home/{{ ansible_user }}/.profile"
+
+- name: Start  etcd
+  service:
+    name:    etcd
+    state:  started
+    enabled: yes
+
+- name: check cluster
+  shell:  ". ~/.profile; etcdctl endpoint status --write-out=table --endpoints=$ENDPOINTS"
+  register: check
+- debug: msg="{{check.stdout}}"

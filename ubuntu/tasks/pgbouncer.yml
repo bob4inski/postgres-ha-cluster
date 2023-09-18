@@ -1,0 +1,31 @@
+---
+- name: Install pgbouncer
+  ansible.builtin.apt:
+    pkg: pgbouncer
+
+- name: stop pgbouncer
+  service:
+    name:    pgbouncer
+    enabled: no
+    state:   stopped
+
+- name: copy pgbouncer config
+  template:
+    src: pgbouncer.ini
+    dest: /etc/pgbouncer/pgbouncer.ini
+
+- name: install python
+  apt:
+    pkg: 
+      - sudo
+
+- name: shell
+  shell: PGPASSWORD=postgres psql -Atq -h {{ hostname }} -p 5432 -U postgres   -d postgres -c "SELECT concat('\"', usename, '\" \"', passwd, '\"') FROM pg_shadow" >> /etc/pgbouncer/userlist.txt
+  # postgresql_user:
+  #   name: postgres
+
+- name: start pgbouncer
+  service:
+    name: pgbouncer
+    enabled: yes
+    state: started

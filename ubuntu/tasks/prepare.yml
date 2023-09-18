@@ -1,0 +1,60 @@
+- name: Recursively remove etcd
+  become: yes
+  ansible.builtin.file:
+    path: /etc/default/etcd
+    state: absent
+
+- name: Remove directory 2
+  become: yes
+  file:
+    path: /etc/haproxy/
+    state: absent
+
+- name: Remove directory 3
+  become: yes
+  file:
+    path: /etc/pgbouncer/
+    state: absent
+
+- name: Remove directory 4
+  become: yes
+  file:
+    path: /etc/keepalived/
+    state: absent
+
+- name: Remove directory 5
+  become: yes
+  file:
+    path: /etc/patroni/
+    state: absent
+
+
+
+- name: Remove packages
+  become: yes
+  apt:
+    pkg:
+    - etcd-server
+    - etcd
+    - postgresql-13
+    - pgbouncer
+    - patroni
+    - haproxy
+    - keepalived
+    
+    state: absent
+
+- name: remove unmask all
+  become: true
+  shell: systemctl unmask etcd patroni keepalived pgbouncer haproxy
+
+- name: Clean apt cache
+  apt:
+    autoclean: yes
+
+
+
+    # sudo rm -rf haproxy/
+    # systemctl stop haproxy
+    # systemctl unmask haproxy
+    #  sudo apt remove haproxy

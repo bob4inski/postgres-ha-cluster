@@ -1,0 +1,139 @@
+---
+- name: starting blockchain node
+  hosts: all
+  # remote_user: developer
+  become: true
+  gather_facts: yes
+  vars_files: 
+    - .env
+
+  pre_tasks:
+  - name: Ping hosts
+    ping:
+    tags: ping 
+
+  - name: System information
+    ansible.builtin.debug:
+      var: system_info
+    vars:
+      system_info:
+        OS: "{{ ansible_distribution | default('N/A') }} {{ ansible_distribution_version | default('N/A') }}"
+        Kernel: "{{ ansible_kernel | default('N/A') }}"
+        CPU model: >-
+          {{ ansible_processor[2] | default('N/A') }},
+          count: {{ ansible_processor_count | default('N/A') }},
+          cores: {{ ansible_processor_cores | default('N/A') }}
+        Memory: "{{ (ansible_memtotal_mb / 1024) | round(2) if ansible_memtotal_mb is defined else 'N/A' }} GB"
+        Disk space total: >-
+          {{
+            (ansible_mounts
+              | map(attribute='size_total')
+              | map('int')
+              | sum / 1024 / 1024 / 1024
+            )
+            | round(2) if ansible_mounts is defined else 'N/A'
+          }} GB
+        Architecture: "{{ ansible_architecture | default('N/A') }}"
+        Virtualization type: "{{ ansible_virtualization_type | default('N/A') }}"
+        Product name: "{{ ansible_product_name | default('N/A') }}"
+    # tags: always
+
+  - name: prepare system
+    become: true 
+    shell: echo -e "{{ node1_address }} {{ node1_hostname }}\n {{ node2_address }} {{ node2_hostname }}" >> /etc/hosts
+    tags: prepare
+
+  
+
+  tasks:
+  - name: Debian/Ubuntu remove all
+    include_role:
+      name: ubuntu
+      tasks_from: prepare.yml
+      apply:
+        tags:
+          - remove
+    when: ansible_os_family == "Debian"
+    tags: remove
+    
+  # - name: Redhat family etcd
+  #   include_role:
+  #     name: centos
+  #     tasks_from: etcd.yml
+  #     apply:
+  #       tags:
+  #         - etcd
+  #   when:
+  #     - ansible_os_family == "RedHat"
+  #     - ansible_distribution_major_version == '7'
+  #   tags: etcd
+
+  - name: Debian/Ubuntu etcd
+    include_role:
+      name: ubuntu
+      tasks_from: etcd.yml
+      apply:
+        tags:
+          - etcd
+    when: ansible_os_family == "Debian"
+    tags: etcd
+
+  # - name: Redhat patroni
+  #   include_role:
+  #     name: centos
+  #     tasks_from: patroni.yml
+  #     apply:
+  #       tags:
+  #         - patroni
+  #   when:
+  #     - ansible_os_family == "RedHat"
+  #     - ansible_distribution_major_version == '7'
+  #   tags: patroni
+
+  - name: Debian/Ubuntu patroni
+    include_role:
+      name: ubuntu
+      tasks_from: patroni.yml
+      apply:
+        tags:
+          - patroni
+    when: ansible_os_family == "Debian"
+    tags: patroni
+
+  - name: Pause for 5 minutes to start patroni
+    ansible.builtin.pause:
+      minutes: 5
+
+  # - name: Debian/Ubuntu pgbouncer
+  #   include_role:
+  #     name: ubuntu
+  #     tasks_from: pgbouncer.yml
+  #     apply:
+  #       tags:
+  #         - pgbouncer
+  #   when: ansible_os_family == "Debian"
+  #   tags: pgbouncer
+
+  - name: Debian/Ubuntu keepalived
+    include_role:
+      name: ubuntu
+      tasks_from: keepalived.yml
+      apply:
+        tags:
+          - keep
+    when: ansible_os_family == "Debian"
+    tags: keep
+
+  - name: Debian/Ubuntu haproxy
+    include_role:
+      name: ubuntu
+      tasks_from: haproxy.yml
+      apply:
+        tags:
+          - haproxy
+    when: ansible_os_family == "Debian"
+    tags: haproxy
+
+
+
+

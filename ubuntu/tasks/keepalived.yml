@@ -1,0 +1,38 @@
+
+- name: install keepalived
+  apt:
+    pkg: keepalived
+
+- name: stop keepalived
+  service:
+    name:    keepalived
+    enabled: no
+    state:   stopped
+
+- ansible.posix.sysctl:
+    name: net.ipv4.ip_forward
+    value: '1'
+    sysctl_set: true
+
+- ansible.posix.sysctl:
+    name: net.ipv4.ip_nonlocal_bind
+    value: '1'
+    sysctl_set: true
+
+- name: Execute sysctl --system
+  command: sysctl --system
+
+- name: Execute sysctl -p
+  command: sysctl -p
+
+- name: copy keepalived config
+  template:
+    src: keepalived.conf
+    dest: /etc/keepalived/keepalived.conf
+
+
+- name: start keepalived
+  service:
+    name:    keepalived
+    enabled: yes
+    state:   started

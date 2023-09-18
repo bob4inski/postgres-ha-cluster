@@ -1,0 +1,8 @@
+---
+- name: etcd
+  include_tasks: etcd.yml
+  tags: etcd
+
+- name: patroni
+  include_tasks: patroni.yml
+  tags: patroni

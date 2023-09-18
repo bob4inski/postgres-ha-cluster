@@ -1,0 +1,35 @@
+[node1]
+node1 ansible_host=192.168.100.102
+
+[node1:vars]
+hostname=node1
+priority=100
+; for vip 
+interface=eth0
+
+[node2]
+node2 ansible_host=192.168.100.101
+
+[node2:vars]
+hostname=node2
+priority=101
+; for vip 
+interface=eth0
+
+; [node3]
+; node3 ansible_host=172.30.10.4
+
+; [node3:vars]
+; hostname=node3
+; priority=99
+; ; for vip 
+; interface=eth0
+
+[all:vars]
+ansible_connection='ssh'
+ansible_user='user'
+ansible_ssh_pass='password'
+ansible_sudo_pass='password'
+
+cluster_vip=192.168.100.200
+; Virtual ip

@@ -1,0 +1,29 @@
+version: '3'
+services:
+  node1:
+    image: ssh-container
+    networks:
+      mynetwork:
+        ipv4_address: 172.30.10.2
+    hostname: node1
+
+  node2:
+    image: ssh-container
+    networks:
+      mynetwork:
+        ipv4_address: 172.30.10.3
+    hostname: node2
+  
+  node3:
+    image: ssh-container
+    networks:
+      mynetwork:
+        ipv4_address: 172.30.10.4
+    hostname: node3
+
+networks:
+  mynetwork:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.10.0/24

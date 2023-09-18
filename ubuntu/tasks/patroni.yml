@@ -1,0 +1,63 @@
+---
+# - name: echo
+#   shell: "echo 1"
+
+- name: install python
+  apt:
+    pkg: 
+      - python3 
+      - python3-pip 
+      - python3-dev
+      - libpq-dev
+      - python-is-python3
+
+
+
+- name: install by pip3
+  # become: true
+  shell:   pip3 install launchpadlib; pip3 install --upgrade setuptools; pip3 install psycopg2; pip3 install python-etcd;
+
+- name: install patroni
+  apt: 
+    pkg: patroni
+    
+- name: stop patroni
+  service:
+    name:    patroni
+    enabled: no
+    state:   stopped
+
+- name: copy patroni config
+  template:
+    src: patroni.yml
+    dest: /etc/patroni/config.yml
+#на разных убунтах разные места конфига
+# и надо менять с config на postgres 
+- name: start patroni
+  service:
+    name: patroni
+    enabled: yes
+    state: started
+
+# - name: move file
+#   shell: mv /etc/patroni/postgres.yml /etc/patroni/config.yml
+
+# - name: start patroni
+#   service:
+#     name: patroni
+#     enabled: yes
+#     state: restarted
+
+- name: Make sure a service patroni started
+  service:
+    state: started
+    name: patroni
+
+- name: Pause for 5 minutes to start patroni
+  ansible.builtin.pause:
+    minutes: 1
+      
+- name: check cluster
+  shell:   patronictl -c /etc/patroni/config.yml list 
+  register: check
+- debug: msg="{{check.stdout}}"
